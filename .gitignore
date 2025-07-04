@@ -1,6 +1,7 @@
 # Images and output directories
 images/
 output/
+temp_spreads/
 
 # Python
 __pycache__/
