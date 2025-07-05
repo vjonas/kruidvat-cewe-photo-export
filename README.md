@@ -111,6 +111,34 @@ Options:
 - `-s, --start-page`: Page number to start spreads from (default: 2)
 - `-d, --dpi`: DPI for image extraction (default: 300)
 
+## Web Interface
+
+**NEW**: A web interface is now available to run the scripts easily!
+
+### Starting the Web Interface
+```bash
+./start_web_interface.sh
+```
+
+Then open your browser to: `http://localhost:5000`
+
+### Features
+- **Modern Web UI**: Clean, responsive interface that works on desktop and mobile
+- **Real-time Output**: See script output in real-time as it runs
+- **Script Management**: Start, stop, and monitor both photo book fetcher and spreads creator
+- **File Downloads**: Download generated PDFs directly from the web interface  
+- **Progress Indicators**: Visual status indicators and progress tracking
+- **Mobile Friendly**: Responsive design that works on all devices
+
+### Web Interface Usage
+1. **Photo Book Fetcher**: Click "Run Photo Book Fetcher" to download all pages (1-98)
+2. **Spreads Creator**: Click "Create Spreads" to convert your PDF to spread format
+3. **View Output**: Click "Show Output" to see real-time script output
+4. **Download Files**: Use the "Generated Files" section to download your PDFs
+5. **Stop Scripts**: Use the "Stop" button to cancel running scripts
+
+The web interface handles all the interactive prompts automatically and provides a much more user-friendly experience than the command line.
+
 ## Notes
 
 - The script is designed to work with the specific CEWE photo book URL format

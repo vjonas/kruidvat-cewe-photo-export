@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEWE Photo Book Fetcher</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 40px;
+        }
+        
+        .script-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .script-section:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .script-title {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .script-description {
+            color: #6c757d;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .output-container {
+            margin-top: 20px;
+            background: #212529;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            display: none;
+        }
+        
+        .output-container.active {
+            display: block;
+        }
+        
+        .output-line {
+            color: #28a745;
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+        }
+        
+        .output-line.error {
+            color: #dc3545;
+        }
+        
+        .output-line.info {
+            color: #17a2b8;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-idle {
+            background: #6c757d;
+        }
+        
+        .status-running {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-error {
+            background: #dc3545;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .file-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+        
+        .file-list {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .file-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .file-item:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .file-details {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .toast.success {
+            background: #28a745;
+        }
+        
+        .toast.error {
+            background: #dc3545;
+        }
+        
+        .toast.info {
+            background: #17a2b8;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .emoji {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .script-section {
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 CEWE Photo Book Fetcher</h1>
+            <p>Web interface for running photo book scripts</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Photo Book Fetcher Section -->
+            <div class="script-section">
+                <h2 class="script-title">
+                    <span class="emoji">📸</span>
+                    <span>Photo Book Fetcher</span>
+                    <span class="status-indicator status-idle" id="photobook-status"></span>
+                </h2>
+                <div class="script-description">
+                    Download pages from CEWE photo book and create a PDF. You can fetch all pages (1-98) or specify a custom range.
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runScript('photobook', [])">
+                        <span id="photobook-spinner" class="loading-spinner" style="display: none;"></span>
+                        <span id="photobook-text">🚀 Run Photo Book Fetcher</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleOutput('photobook')">
+                        📄 Show Output
+                    </button>
+                    <button class="btn btn-danger" onclick="stopScript('photobook')" disabled id="photobook-stop">
+                        ⏹️ Stop
+                    </button>
+                </div>
+                
+                <div class="output-container" id="photobook-output">
+                    <div class="output-line info">Ready to run photo book fetcher...</div>
+                </div>
+            </div>
+            
+            <!-- Spreads Creator Section -->
+            <div class="script-section">
+                <h2 class="script-title">
+                    <span class="emoji">📖</span>
+                    <span>Spreads Creator</span>
+                    <span class="status-indicator status-idle" id="spreads-status"></span>
+                </h2>
+                <div class="script-description">
+                    Convert your photo book PDF to spread format (2 pages side by side). Creates spreads starting from page 3 with high quality (600 DPI).
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="runScript('spreads', [])">
+                        <span id="spreads-spinner" class="loading-spinner" style="display: none;"></span>
+                        <span id="spreads-text">🚀 Create Spreads</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleOutput('spreads')">
+                        📄 Show Output
+                    </button>
+                    <button class="btn btn-danger" onclick="stopScript('spreads')" disabled id="spreads-stop">
+                        ⏹️ Stop
+                    </button>
+                </div>
+                
+                <div class="output-container" id="spreads-output">
+                    <div class="output-line info">Ready to create spreads...</div>
+                </div>
+            </div>
+            
+            <!-- File Downloads Section -->
+            <div class="file-section">
+                <h2 class="script-title">
+                    <span class="emoji">📁</span>
+                    <span>Generated Files</span>
+                </h2>
+                <div class="script-description">
+                    Download your generated PDF files
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-secondary" onclick="refreshFiles()">
+                        🔄 Refresh Files
+                    </button>
+                </div>
+                
+                <div class="file-list" id="file-list">
+                    <div class="output-line info">No files generated yet. Run a script first.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+        
+        // State management
+        let runningScripts = new Set();
+        
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+        
+        socket.on('script_output', function(data) {
+            addOutputLine(data.script, data.output, 'info');
+        });
+        
+        socket.on('script_finished', function(data) {
+            const script = data.script;
+            runningScripts.delete(script);
+            updateScriptStatus(script, 'idle');
+            
+            if (data.return_code === 0) {
+                addOutputLine(script, `✅ Script completed successfully!`, 'success');
+                showToast('Script completed successfully!', 'success');
+            } else {
+                addOutputLine(script, `❌ Script failed with code ${data.return_code}`, 'error');
+                showToast('Script failed!', 'error');
+            }
+            
+            // Refresh files after completion
+            setTimeout(refreshFiles, 1000);
+        });
+        
+        socket.on('script_error', function(data) {
+            addOutputLine(data.script, `❌ Error: ${data.error}`, 'error');
+            runningScripts.delete(data.script);
+            updateScriptStatus(data.script, 'error');
+            showToast('Script error!', 'error');
+        });
+        
+        // Script management functions
+        function runScript(scriptName, options = []) {
+            if (runningScripts.has(scriptName)) {
+                showToast('Script is already running!', 'info');
+                return;
+            }
+            
+            fetch('/run_script', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    script: scriptName,
+                    options: options
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    runningScripts.add(scriptName);
+                    updateScriptStatus(scriptName, 'running');
+                    clearOutput(scriptName);
+                    addOutputLine(scriptName, `🚀 Starting ${scriptName} script...`, 'info');
+                    showToast(data.message, 'success');
+                } else {
+                    addOutputLine(scriptName, `❌ Failed to start: ${data.message}`, 'error');
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Network error!', 'error');
+            });
+        }
+        
+        function stopScript(scriptName) {
+            fetch('/stop_script', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    script: scriptName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    runningScripts.delete(scriptName);
+                    updateScriptStatus(scriptName, 'idle');
+                    addOutputLine(scriptName, `⏹️ Script stopped`, 'info');
+                    showToast(data.message, 'info');
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Network error!', 'error');
+            });
+        }
+        
+        function updateScriptStatus(scriptName, status) {
+            const statusElement = document.getElementById(`${scriptName}-status`);
+            const spinnerElement = document.getElementById(`${scriptName}-spinner`);
+            const textElement = document.getElementById(`${scriptName}-text`);
+            const stopButton = document.getElementById(`${scriptName}-stop`);
+            
+            // Update status indicator
+            statusElement.className = `status-indicator status-${status}`;
+            
+            // Update button states
+            if (status === 'running') {
+                spinnerElement.style.display = 'inline-block';
+                stopButton.disabled = false;
+            } else {
+                spinnerElement.style.display = 'none';
+                stopButton.disabled = true;
+            }
+        }
+        
+        function toggleOutput(scriptName) {
+            const outputContainer = document.getElementById(`${scriptName}-output`);
+            outputContainer.classList.toggle('active');
+        }
+        
+        function clearOutput(scriptName) {
+            const outputContainer = document.getElementById(`${scriptName}-output`);
+            outputContainer.innerHTML = '';
+        }
+        
+        function addOutputLine(scriptName, text, type = 'info') {
+            const outputContainer = document.getElementById(`${scriptName}-output`);
+            const line = document.createElement('div');
+            line.className = `output-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+            outputContainer.appendChild(line);
+            outputContainer.scrollTop = outputContainer.scrollHeight;
+        }
+        
+        function refreshFiles() {
+            fetch('/list_files')
+            .then(response => response.json())
+            .then(data => {
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+                
+                if (data.files.length === 0) {
+                    fileList.innerHTML = '<div class="output-line info">No files generated yet. Run a script first.</div>';
+                    return;
+                }
+                
+                data.files.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div class="file-info">
+                            <div class="file-name">📄 ${file.name}</div>
+                            <div class="file-details">
+                                Size: ${formatFileSize(file.size)} | Modified: ${file.modified}
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="downloadFile('${file.name}')">
+                            ⬇️ Download
+                        </button>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to refresh files!', 'error');
+            });
+        }
+        
+        function downloadFile(filename) {
+            window.open(`/download/${filename}`, '_blank');
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshFiles();
+        });
+    </script>
+</body>
+</html>
