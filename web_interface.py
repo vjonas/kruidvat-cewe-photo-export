@@ -86,7 +86,7 @@ class ScriptRunner:
             logger.error(f"Error running script {script_name}: {str(e)}")
             return False, f"Error: {str(e)}"
     
-    def run_cewe_fetcher(self, script_name, photobook_url, start_page=1, end_page=None, width=1080):
+    def run_cewe_fetcher(self, script_name, photobook_url, start_page=1, end_page=None, width=1080, filename=None):
         """Run CEWE fetcher directly"""
         if not CEWE_FETCHER_AVAILABLE:
             return False, "CEWE fetcher not available. Install required dependencies."
@@ -102,6 +102,10 @@ class ScriptRunner:
                 end_page=end_page,
                 target_width=width
             )
+            
+            # Store custom filename for later use
+            if filename:
+                fetcher.custom_filename = filename
             
             self.running_fetchers[script_name] = fetcher
             self.process_outputs[script_name] = []
@@ -185,8 +189,9 @@ class ScriptRunner:
             builtins.print = custom_print
             
             try:
-                # Run the fetcher
-                success = fetcher.run()
+                # Run the fetcher with custom filename if provided
+                custom_filename = getattr(fetcher, 'custom_filename', None)
+                success = fetcher.run(custom_filename)
                 
                 if success:
                     emit_output("🎉 CEWE photo book fetched successfully!")
@@ -411,6 +416,7 @@ def run_cewe_fetcher():
     if end_page:
         end_page = int(end_page)
     width = int(data.get('width', 1080))
+    filename = data.get('filename') # Get custom filename
     
     if not photobook_url:
         return jsonify({'success': False, 'message': 'Photo book URL is required'})
@@ -423,7 +429,8 @@ def run_cewe_fetcher():
         photobook_url, 
         start_page, 
         end_page, 
-        width
+        width,
+        filename # Pass filename to the runner
     )
     
     return jsonify({'success': success, 'message': message})

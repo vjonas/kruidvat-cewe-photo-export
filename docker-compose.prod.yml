@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # Main CEWE Fetcher Application
+  cewe-fetcher:
+    build: .
+    container_name: cewe-photobook-fetcher
+    volumes:
+      - ./output:/app/output
+      - ./images:/app/images
+      - ./temp_spreads:/app/temp_spreads
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cewe-network
+    # Only expose to internal network, not to host
+    expose:
+      - "4200"
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cewe-nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro # Mount SSL certificates directory
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - cewe-fetcher
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cewe-network
+
+  # Watchtower for automatic updates (optional)
+  watchtower:
+    image: containrrr/watchtower
+    container_name: cewe-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400 # Check once per day
+    restart: unless-stopped
+    networks:
+      - cewe-network
+
+volumes:
+  nginx-logs:
+
+networks:
+  cewe-network:
+    driver: bridge

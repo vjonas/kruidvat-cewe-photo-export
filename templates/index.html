@@ -455,6 +455,18 @@
                            value="">
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label"
+                           for="pdf-filename">📝 PDF Filename (optional):</label>
+                    <input type="text"
+                           id="pdf-filename"
+                           class="form-input"
+                           placeholder="my-photobook.pdf"
+                           value="">
+                    <small style="color: #6c757d; font-size: 0.9em;">Leave empty for auto-generated name. Extension .pdf
+                        will be added automatically.</small>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label"
@@ -810,6 +822,7 @@
             const startPage = parseInt(document.getElementById('start-page').value) || 1;
             const endPage = document.getElementById('end-page').value ? parseInt(document.getElementById('end-page').value) : null;
             const width = parseInt(document.getElementById('image-width').value) || 1080;
+            const filename = document.getElementById('pdf-filename').value.trim() || null;
 
             if (!url) {
                 showToast('Please enter a photo book URL!', 'error');
@@ -833,7 +846,8 @@
                     url: url,
                     start_page: startPage,
                     end_page: endPage,
-                    width: width
+                    width: width,
+                    filename: filename
                 })
             })
                 .then(response => response.json())

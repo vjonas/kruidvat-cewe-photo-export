@@ -1,0 +1,28 @@
+version: "3.8"
+
+services:
+  cewe-fetcher:
+    build: .
+    container_name: cewe-photobook-fetcher
+    ports:
+      - "4200:4200" # Map container port 4200 to host port 4200
+    volumes:
+      - ./output:/app/output # Persist output files
+      - ./images:/app/images # Persist downloaded images
+      - ./temp_spreads:/app/temp_spreads # Persist temp spreads
+    environment:
+      - FLASK_ENV=production
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4200/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - cewe-network
+
+networks:
+  cewe-network:
+    driver: bridge

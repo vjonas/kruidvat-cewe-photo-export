@@ -324,6 +324,14 @@ class CEWEPhotoBookFetcher:
             # Extract some identifier from the URL for filename
             url_hash = abs(hash(self.photobook_url)) % 100000
             output_filename = f"cewe_photobook_{url_hash}.pdf"
+        else:
+            # Sanitize filename and ensure .pdf extension
+            import re
+            # Remove or replace invalid characters
+            output_filename = re.sub(r'[<>:"/\\|?*]', '_', output_filename)
+            # Ensure .pdf extension
+            if not output_filename.lower().endswith('.pdf'):
+                output_filename += '.pdf'
         
         # Create PDF
         pdf_path = self.create_pdf_with_pymupdf(successful_images, output_filename)
