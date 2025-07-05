@@ -8,6 +8,7 @@ import os
 import subprocess
 import threading
 import time
+import glob
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 from flask_socketio import SocketIO, emit
 import logging
@@ -25,6 +26,14 @@ except ImportError:
     CEWE_FETCHER_AVAILABLE = False
     print("⚠️ CEWE fetcher not available. Install required dependencies.")
 
+# Try to import spreads creator
+try:
+    from create_spreads import PDFSpreadCreator
+    SPREADS_CREATOR_AVAILABLE = True
+except ImportError:
+    SPREADS_CREATOR_AVAILABLE = False
+    print("⚠️ Spreads creator not available.")
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -38,6 +47,8 @@ class ScriptRunner:
         self.running_processes = {}
         self.process_outputs = {}
         self.running_fetchers = {}  # For CEWE fetcher instances
+        self.running_spreads = {}   # For spreads creator instances
+        self.last_created_pdf = None  # Track the last created PDF
     
     def run_script(self, script_name, script_path, options=None):
         """Run a script and stream its output"""
@@ -108,6 +119,43 @@ class ScriptRunner:
             logger.error(f"Error running CEWE fetcher {script_name}: {str(e)}")
             return False, f"Error: {str(e)}"
     
+    def run_spreads_creator(self, script_name, input_pdf, start_spread_page=2, dpi=300):
+        """Run spreads creator directly"""
+        if not SPREADS_CREATOR_AVAILABLE:
+            return False, "Spreads creator not available."
+            
+        if script_name in self.running_spreads:
+            return False, "Spreads creator is already running"
+        
+        try:
+            # Generate output filename
+            base_name = os.path.splitext(os.path.basename(input_pdf))[0]
+            output_pdf = f"output/{base_name}_spreads.pdf"
+            
+            # Create spreads creator instance
+            creator = PDFSpreadCreator(
+                input_pdf=input_pdf,
+                output_pdf=output_pdf,
+                start_spread_page=start_spread_page,
+                dpi=dpi
+            )
+            
+            self.running_spreads[script_name] = creator
+            self.process_outputs[script_name] = []
+            
+            # Start creator thread
+            threading.Thread(
+                target=self._run_spreads_creator_thread,
+                args=(script_name, creator),
+                daemon=True
+            ).start()
+            
+            return True, "Spreads creator started successfully"
+            
+        except Exception as e:
+            logger.error(f"Error running spreads creator {script_name}: {str(e)}")
+            return False, f"Error: {str(e)}"
+    
     def _run_cewe_fetcher_thread(self, script_name, fetcher):
         """Run CEWE fetcher in a separate thread"""
         try:
@@ -142,6 +190,23 @@ class ScriptRunner:
                 
                 if success:
                     emit_output("🎉 CEWE photo book fetched successfully!")
+                    
+                    # Find the created PDF
+                    output_dir = "output"
+                    pdf_files = glob.glob(os.path.join(output_dir, "cewe_photobook_*.pdf"))
+                    if pdf_files:
+                        # Get the most recently created PDF
+                        latest_pdf = max(pdf_files, key=os.path.getctime)
+                        self.last_created_pdf = latest_pdf
+                        emit_output(f"📄 Created PDF: {latest_pdf}")
+                        
+                        # Emit special event for successful PDF creation
+                        socketio.emit('pdf_created', {
+                            'pdf_path': latest_pdf,
+                            'script': script_name,
+                            'timestamp': datetime.now().strftime('%H:%M:%S')
+                        })
+                    
                     socketio.emit('script_finished', {
                         'script': script_name,
                         'return_code': 0,
@@ -170,6 +235,63 @@ class ScriptRunner:
             # Clean up
             if script_name in self.running_fetchers:
                 del self.running_fetchers[script_name]
+    
+    def _run_spreads_creator_thread(self, script_name, creator):
+        """Run spreads creator in a separate thread"""
+        try:
+            def emit_output(message):
+                self.process_outputs[script_name].append(message)
+                socketio.emit('script_output', {
+                    'script': script_name,
+                    'output': message,
+                    'timestamp': datetime.now().strftime('%H:%M:%S')
+                })
+            
+            # Override print function temporarily
+            original_print = print
+            def custom_print(*args, **kwargs):
+                message = ' '.join(str(arg) for arg in args)
+                emit_output(message)
+                original_print(*args, **kwargs)
+            
+            # Replace print globally for the creator
+            import builtins
+            builtins.print = custom_print
+            
+            try:
+                # Run the creator
+                success = creator.run()
+                
+                if success:
+                    emit_output("🎉 Spreads created successfully!")
+                    socketio.emit('script_finished', {
+                        'script': script_name,
+                        'return_code': 0,
+                        'timestamp': datetime.now().strftime('%H:%M:%S')
+                    })
+                else:
+                    emit_output("❌ Spreads creation failed!")
+                    socketio.emit('script_finished', {
+                        'script': script_name,
+                        'return_code': 1,
+                        'timestamp': datetime.now().strftime('%H:%M:%S')
+                    })
+                    
+            finally:
+                # Restore original print
+                builtins.print = original_print
+                
+        except Exception as e:
+            logger.error(f"Error in spreads creator thread {script_name}: {str(e)}")
+            socketio.emit('script_error', {
+                'script': script_name,
+                'error': str(e),
+                'timestamp': datetime.now().strftime('%H:%M:%S')
+            })
+        finally:
+            # Clean up
+            if script_name in self.running_spreads:
+                del self.running_spreads[script_name]
     
     def _stream_output(self, script_name, process):
         """Stream process output via websocket"""
@@ -228,15 +350,29 @@ class ScriptRunner:
             except Exception as e:
                 return False, f"Error stopping CEWE fetcher: {str(e)}"
         
+        # Try to stop spreads creator
+        if script_name in self.running_spreads:
+            try:
+                del self.running_spreads[script_name]
+                return True, "Spreads creator stopped"
+            except Exception as e:
+                return False, f"Error stopping spreads creator: {str(e)}"
+        
         return False, "Script not running"
     
     def is_running(self, script_name):
         """Check if a script or fetcher is running"""
-        return script_name in self.running_processes or script_name in self.running_fetchers
+        return (script_name in self.running_processes or 
+                script_name in self.running_fetchers or 
+                script_name in self.running_spreads)
     
     def get_output(self, script_name):
         """Get accumulated output for a script"""
         return self.process_outputs.get(script_name, [])
+    
+    def get_latest_pdf(self):
+        """Get the path to the most recently created PDF"""
+        return self.last_created_pdf
 
 # Global script runner instance
 script_runner = ScriptRunner()
@@ -244,7 +380,9 @@ script_runner = ScriptRunner()
 @app.route('/')
 def index():
     """Main page"""
-    return render_template('index.html', cewe_available=CEWE_FETCHER_AVAILABLE)
+    return render_template('index.html', 
+                         cewe_available=CEWE_FETCHER_AVAILABLE,
+                         spreads_available=SPREADS_CREATOR_AVAILABLE)
 
 @app.route('/run_script', methods=['POST'])
 def run_script():
@@ -289,6 +427,60 @@ def run_cewe_fetcher():
     )
     
     return jsonify({'success': success, 'message': message})
+
+@app.route('/run_spreads_creator', methods=['POST'])
+def run_spreads_creator():
+    """Run spreads creator with specified PDF"""
+    data = request.json
+    
+    input_pdf = data.get('input_pdf', '').strip()
+    start_spread_page = int(data.get('start_spread_page', 2))
+    dpi = int(data.get('dpi', 300))
+    
+    if not input_pdf:
+        return jsonify({'success': False, 'message': 'Input PDF is required'})
+    
+    if not os.path.exists(input_pdf):
+        return jsonify({'success': False, 'message': 'Input PDF file not found'})
+    
+    success, message = script_runner.run_spreads_creator(
+        'spreads_creator',
+        input_pdf,
+        start_spread_page,
+        dpi
+    )
+    
+    return jsonify({'success': success, 'message': message})
+
+@app.route('/get_latest_pdf')
+def get_latest_pdf():
+    """Get the latest created PDF"""
+    latest_pdf = script_runner.get_latest_pdf()
+    return jsonify({'latest_pdf': latest_pdf})
+
+@app.route('/get_available_pdfs')
+def get_available_pdfs():
+    """Get list of available PDFs for spreads creation"""
+    output_dir = "output"
+    if not os.path.exists(output_dir):
+        return jsonify({'pdfs': []})
+    
+    pdf_files = []
+    for file in os.listdir(output_dir):
+        if file.endswith('.pdf') and not file.endswith('_spreads.pdf'):
+            file_path = os.path.join(output_dir, file)
+            file_stats = os.stat(file_path)
+            pdf_files.append({
+                'path': file_path,
+                'name': file,
+                'size': file_stats.st_size,
+                'modified': datetime.fromtimestamp(file_stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            })
+    
+    # Sort by modification time, newest first
+    pdf_files.sort(key=lambda x: x['modified'], reverse=True)
+    
+    return jsonify({'pdfs': pdf_files})
 
 @app.route('/stop_script', methods=['POST'])
 def stop_script():
@@ -361,5 +553,10 @@ if __name__ == '__main__':
         print("✅ CEWE URL fetcher available")
     else:
         print("⚠️ CEWE URL fetcher not available - install dependencies")
+    
+    if SPREADS_CREATOR_AVAILABLE:
+        print("✅ Spreads creator available")
+    else:
+        print("⚠️ Spreads creator not available")
     
     socketio.run(app, host='0.0.0.0', port=4200, debug=False)

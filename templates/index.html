@@ -93,7 +93,8 @@
             color: #495057;
         }
 
-        .form-input {
+        .form-input,
+        .form-select {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e9ecef;
@@ -102,7 +103,8 @@
             transition: border-color 0.3s ease;
         }
 
-        .form-input:focus {
+        .form-input:focus,
+        .form-select:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -111,6 +113,30 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
+        }
+
+        .auto-suggest {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .auto-suggest.show {
+            display: block;
+        }
+
+        .auto-suggest-title {
+            font-weight: 600;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .auto-suggest-text {
+            color: #1565c0;
+            margin-bottom: 15px;
         }
 
         .button-group {
@@ -151,6 +177,16 @@
 
         .btn-secondary:hover {
             background: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
             transform: translateY(-2px);
         }
 
@@ -494,7 +530,118 @@
             </div>
             {% endif %}
 
-            <!-- Photo Book Fetcher Section -->
+            <!-- Enhanced Spreads Creator Section -->
+            {% if spreads_available %}
+            <div class="script-section">
+                <h2 class="script-title">
+                    <span class="emoji">📖</span>
+                    <span>Enhanced Spreads Creator</span>
+                    <span class="status-indicator status-idle"
+                          id="spreads_creator-status"></span>
+                </h2>
+                <div class="script-description">
+                    Convert any PDF to spread format (2 pages side by side). Select a PDF from your generated files or
+                    use the most recent one.
+                </div>
+
+                <!-- Auto-suggest box (shown after CEWE fetch) -->
+                <div class="auto-suggest"
+                     id="spreads-auto-suggest">
+                    <div class="auto-suggest-title">🎉 Photo Book Downloaded!</div>
+                    <div class="auto-suggest-text">Would you like to create spreads from your newly downloaded photo
+                        book?</div>
+                    <button class="btn btn-success btn-sm"
+                            onclick="createSpreadsFromLatest()">
+                        📖 Yes, Create Spreads
+                    </button>
+                    <button class="btn btn-secondary btn-sm"
+                            onclick="hideSpreadsAutosuggest()">
+                        ❌ No Thanks
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"
+                           for="pdf-select">📄 Select PDF:</label>
+                    <select id="pdf-select"
+                            class="form-select">
+                        <option value="">Loading available PDFs...</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label"
+                               for="spread-start-page">📚 Start Spreads from Page:</label>
+                        <input type="number"
+                               id="spread-start-page"
+                               class="form-input"
+                               min="1"
+                               value="2"
+                               placeholder="2">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"
+                               for="spread-dpi">🔍 DPI Quality:</label>
+                        <select id="spread-dpi"
+                                class="form-select">
+                            <option value="150">150 DPI (Fast)</option>
+                            <option value="300"
+                                    selected>300 DPI (Standard)</option>
+                            <option value="600">600 DPI (High Quality)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-secondary"
+                                onclick="refreshAvailablePDFs()">
+                            🔄 Refresh PDFs
+                        </button>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="btn btn-primary"
+                            onclick="runSpreadsCreator()">
+                        <span id="spreads_creator-spinner"
+                              class="loading-spinner"
+                              style="display: none;"></span>
+                        <span id="spreads_creator-text">🚀 Create Spreads</span>
+                    </button>
+                    <button class="btn btn-secondary"
+                            onclick="toggleOutput('spreads_creator')">
+                        📄 Show Output
+                    </button>
+                    <button class="btn btn-danger"
+                            onclick="stopScript('spreads_creator')"
+                            disabled
+                            id="spreads_creator-stop">
+                        ⏹️ Stop
+                    </button>
+                </div>
+
+                <div class="output-container"
+                     id="spreads_creator-output">
+                    <div class="output-line info">Select a PDF above and click "Create Spreads"...</div>
+                </div>
+            </div>
+            {% else %}
+            <div class="script-section disabled-section">
+                <div class="warning-banner">
+                    ⚠️ Enhanced Spreads Creator is not available. Please check PyMuPDF installation.
+                </div>
+                <h2 class="script-title">
+                    <span class="emoji">📖</span>
+                    <span>Enhanced Spreads Creator</span>
+                    <span class="status-indicator status-error"></span>
+                </h2>
+                <div class="script-description">
+                    This feature requires PyMuPDF. Run: <code>pip install PyMuPDF</code>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Legacy Photo Book Fetcher Section -->
             <div class="script-section">
                 <h2 class="script-title">
                     <span class="emoji">📸</span>
@@ -533,17 +680,17 @@
                 </div>
             </div>
 
-            <!-- Spreads Creator Section -->
+            <!-- Legacy Spreads Creator Section -->
             <div class="script-section">
                 <h2 class="script-title">
-                    <span class="emoji">📖</span>
-                    <span>Spreads Creator</span>
+                    <span class="emoji">📄</span>
+                    <span>Legacy Spreads Creator</span>
                     <span class="status-indicator status-idle"
                           id="spreads-status"></span>
                 </h2>
                 <div class="script-description">
-                    Convert your photo book PDF to spread format (2 pages side by side). Creates spreads starting from
-                    page 3 with high quality (600 DPI).
+                    Convert your photo book PDF to spread format using the legacy shell script (works with hardcoded
+                    file paths).
                 </div>
 
                 <div class="button-group">
@@ -552,7 +699,7 @@
                         <span id="spreads-spinner"
                               class="loading-spinner"
                               style="display: none;"></span>
-                        <span id="spreads-text">🚀 Create Spreads</span>
+                        <span id="spreads-text">🚀 Create Legacy Spreads</span>
                     </button>
                     <button class="btn btn-secondary"
                             onclick="toggleOutput('spreads')">
@@ -568,7 +715,7 @@
 
                 <div class="output-container"
                      id="spreads-output">
-                    <div class="output-line info">Ready to create spreads...</div>
+                    <div class="output-line info">Ready to create legacy spreads...</div>
                 </div>
             </div>
 
@@ -606,6 +753,7 @@
 
         // State management
         let runningScripts = new Set();
+        let availablePDFs = [];
 
         // Socket event handlers
         socket.on('connect', function () {
@@ -631,6 +779,11 @@
 
             // Refresh files after completion
             setTimeout(refreshFiles, 1000);
+
+            // Refresh available PDFs for spreads
+            if (script === 'cewe_fetcher' || script === 'photobook') {
+                setTimeout(refreshAvailablePDFs, 1000);
+            }
         });
 
         socket.on('script_error', function (data) {
@@ -638,6 +791,17 @@
             runningScripts.delete(data.script);
             updateScriptStatus(data.script, 'error');
             showToast('Script error!', 'error');
+        });
+
+        socket.on('pdf_created', function (data) {
+            console.log('PDF created:', data);
+            addOutputLine(data.script, `📄 PDF created: ${data.pdf_path}`, 'success');
+
+            // Show auto-suggest for spreads creation
+            showSpreadsAutosuggest(data.pdf_path);
+
+            // Refresh available PDFs
+            setTimeout(refreshAvailablePDFs, 500);
         });
 
         // CEWE Fetcher function
@@ -656,6 +820,9 @@
                 showToast('CEWE fetcher is already running!', 'info');
                 return;
             }
+
+            // Hide auto-suggest if visible
+            hideSpreadsAutosuggest();
 
             fetch('/run_cewe_fetcher', {
                 method: 'POST',
@@ -688,6 +855,104 @@
                     console.error('Error:', error);
                     showToast('Network error!', 'error');
                 });
+        }
+
+        // Enhanced Spreads Creator functions
+        function runSpreadsCreator() {
+            const selectedPDF = document.getElementById('pdf-select').value;
+            const startSpreadPage = parseInt(document.getElementById('spread-start-page').value) || 2;
+            const dpi = parseInt(document.getElementById('spread-dpi').value) || 300;
+
+            if (!selectedPDF) {
+                showToast('Please select a PDF file!', 'error');
+                return;
+            }
+
+            if (runningScripts.has('spreads_creator')) {
+                showToast('Spreads creator is already running!', 'info');
+                return;
+            }
+
+            fetch('/run_spreads_creator', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    input_pdf: selectedPDF,
+                    start_spread_page: startSpreadPage,
+                    dpi: dpi
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        runningScripts.add('spreads_creator');
+                        updateScriptStatus('spreads_creator', 'running');
+                        clearOutput('spreads_creator');
+                        addOutputLine('spreads_creator', `🚀 Creating spreads from: ${selectedPDF}`, 'info');
+                        addOutputLine('spreads_creator', `📚 Starting spreads from page: ${startSpreadPage}`, 'info');
+                        addOutputLine('spreads_creator', `🔍 DPI: ${dpi}`, 'info');
+                        showToast(data.message, 'success');
+                    } else {
+                        addOutputLine('spreads_creator', `❌ Failed to start: ${data.message}`, 'error');
+                        showToast(data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Network error!', 'error');
+                });
+        }
+
+        function refreshAvailablePDFs() {
+            fetch('/get_available_pdfs')
+                .then(response => response.json())
+                .then(data => {
+                    availablePDFs = data.pdfs;
+                    const select = document.getElementById('pdf-select');
+
+                    if (data.pdfs.length === 0) {
+                        select.innerHTML = '<option value="">No PDFs available</option>';
+                    } else {
+                        select.innerHTML = data.pdfs.map(pdf =>
+                            `<option value="${pdf.path}">${pdf.name} (${(pdf.size / 1024 / 1024).toFixed(2)} MB - ${pdf.modified})</option>`
+                        ).join('');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error refreshing PDFs:', error);
+                    document.getElementById('pdf-select').innerHTML = '<option value="">Error loading PDFs</option>';
+                });
+        }
+
+        function showSpreadsAutosuggest(pdfPath) {
+            const suggestBox = document.getElementById('spreads-auto-suggest');
+            suggestBox.classList.add('show');
+
+            // Store the PDF path for later use
+            suggestBox.dataset.pdfPath = pdfPath;
+        }
+
+        function hideSpreadsAutosuggest() {
+            const suggestBox = document.getElementById('spreads-auto-suggest');
+            suggestBox.classList.remove('show');
+        }
+
+        function createSpreadsFromLatest() {
+            const suggestBox = document.getElementById('spreads-auto-suggest');
+            const pdfPath = suggestBox.dataset.pdfPath;
+
+            if (pdfPath) {
+                // Set the PDF in the dropdown
+                document.getElementById('pdf-select').value = pdfPath;
+
+                // Hide the suggestion
+                hideSpreadsAutosuggest();
+
+                // Start the spreads creation
+                runSpreadsCreator();
+            }
         }
 
         // Script management functions
@@ -844,6 +1109,7 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function () {
             refreshFiles();
+            refreshAvailablePDFs();
 
             // Pre-fill example URL if available
             const urlInput = document.getElementById('photobook-url');
