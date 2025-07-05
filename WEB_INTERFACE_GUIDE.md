@@ -8,7 +8,7 @@
 ```
 
 ### 2. Access the Interface
-Open your browser and go to: **http://localhost:5000**
+Open your browser and go to: **http://localhost:4200**
 
 That's it! The web interface will handle all the setup automatically.
 
@@ -66,7 +66,7 @@ That's it! The web interface will handle all the setup automatically.
 
 ### Server Information
 - **Host**: 0.0.0.0 (accessible from network)
-- **Port**: 5000
+- **Port**: 4200
 - **Protocol**: HTTP with WebSocket support
 
 ### File Locations
@@ -130,7 +130,7 @@ The web interface automatically installs:
 
 **Web interface won't start:**
 - Check if Python 3 is installed
-- Ensure port 5000 is available
+- Ensure port 4200 is available
 - Check for any error messages in the terminal
 
 **Scripts won't run:**
@@ -139,9 +139,9 @@ The web interface automatically installs:
 - Ensure the virtual environment is working
 
 **Can't access from other devices:**
-- The server runs on 0.0.0.0:5000, accessible from network
+- The server runs on 0.0.0.0:4200, accessible from network
 - Check your firewall settings
-- Use your computer's IP address: `http://YOUR_IP:5000`
+- Use your computer's IP address: `http://YOUR_IP:4200`
 
 **Files not downloading:**
 - Check if the `output/` directory exists
@@ -159,7 +159,7 @@ The web interface automatically installs:
 ### Running on Different Port
 Edit `web_interface.py` and change:
 ```python
-socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+socketio.run(app, host='0.0.0.0', port=4200, debug=False)
 ```
 
 ### Custom Script Options
@@ -171,7 +171,7 @@ The web interface currently runs scripts with default options. To customize:
 ### Network Access
 The web interface is accessible from other devices on your network:
 - Find your computer's IP address
-- Access via `http://YOUR_IP:5000`
+- Access via `http://YOUR_IP:4200`
 - Useful for running on a server and accessing from other devices
 
 ## 📱 Mobile Experience

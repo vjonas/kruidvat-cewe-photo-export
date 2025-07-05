@@ -3,4 +3,5 @@ Pillow>=10.0.0
 tqdm>=4.64.0
 PyMuPDF>=1.23.0
 Flask>=2.3.0
-Flask-SocketIO>=5.3.0 
+Flask-SocketIO>=5.3.0
+beautifulsoup4>=4.12.0 

@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# CEWE Photo Book Fetcher - Web Interface Startup Script
+# Enhanced CEWE Photo Book Fetcher Web Interface Starter
 
-echo "🚀 Starting CEWE Photo Book Fetcher Web Interface..."
-echo ""
+echo "🚀 Starting Enhanced CEWE Photo Book Fetcher Web Interface..."
 
 # Check if Python is available
 if ! command -v python3 &> /dev/null; then
@@ -25,19 +24,25 @@ source venv/bin/activate
 echo "📥 Installing dependencies..."
 pip install -r requirements.txt
 
-# Create output directory if it doesn't exist
-if [ ! -d "output" ]; then
-    echo "📁 Creating output directory..."
-    mkdir output
-fi
+# Check if all dependencies are available
+echo "🔍 Checking dependencies..."
+python3 -c "
+import sys
+try:
+    import requests, PIL, tqdm, fitz, flask, flask_socketio, bs4
+    print('✅ All required dependencies are available')
+except ImportError as e:
+    print(f'❌ Missing dependency: {e}')
+    print('⚠️  Some features may not work properly')
+"
 
-echo ""
+# Create necessary directories
+mkdir -p output images temp_spreads
+
 echo "✅ Setup complete!"
-echo ""
 echo "🌐 Starting web interface..."
 echo "📱 Access the interface at: http://localhost:4200"
 echo "🔧 Press Ctrl+C to stop the server"
-echo ""
 
 # Start the web interface
-python3 web_interface.py
+python3 web_interface.py 
