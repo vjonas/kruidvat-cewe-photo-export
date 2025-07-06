@@ -172,7 +172,7 @@ class PhotoBookFetcher:
 
 def main():
     # The base URL from the user
-    base_url = "https://cewe.kruidvat.nl/web/50000005/photoBookPageRender.do?orderId=841684379&position=0&page=98&width=1080&hash=d19a90283ed4fd02254ff7710711be30&access=PY4EZ5"
+    base_url = "https://cewe.kruidvat.nl/web/42000005/photoBookPageRender.do?orderId=841684379&position=0&page=98&width=1080&hash=d19a90283ed4fd02254ff7710711be30&access=PY4EZ5"
     
     # Allow command line arguments for page range
     start_page = 1
