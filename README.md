@@ -43,6 +43,10 @@ Start the enhanced web interface:
 
 Then open your browser to: http://localhost:4200
 
+### Start docker container for PRD https forwarding
+- enable port forwarding for 80 and 443
+- run the `./deploy.sh deploy-prod` cmd to deploy the docker containers locally, and have remote access through IP address
+
 #### CEWE URL Fetcher
 1. Enter your CEWE photo book URL (e.g., `https://www.cewe-fotobuch.de/view/b5cfcec0834b21d1ea0843e55f8db21a`)
 2. Configure page range (optional - auto-detects by default)
