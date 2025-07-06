@@ -14,6 +14,17 @@ worker_connections = 1000
 timeout = 300
 keepalive = 2
 
+# Gevent-specific configuration for WebSocket support
+def when_ready(server):
+    """Configure gevent-websocket when server is ready"""
+    from gevent import monkey
+    monkey.patch_all()
+
+def post_fork(server, worker):
+    """Configure worker after fork"""
+    from gevent import monkey
+    monkey.patch_all()
+
 # Restart workers after this many requests, to help prevent memory leaks
 max_requests = 1000
 max_requests_jitter = 100

@@ -5,6 +5,12 @@ Provides a web UI to run the shell scripts and CEWE URL fetcher
 """
 
 import os
+
+# Early gevent monkey patching for production
+if os.environ.get('FLASK_ENV') == 'production':
+    from gevent import monkey
+    monkey.patch_all()
+
 import subprocess
 import threading
 import time
@@ -36,7 +42,11 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', logger=True, engineio_logger=True)
+
+# Configure SocketIO with proper gevent settings
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', 
+                   logger=False, engineio_logger=False, 
+                   ping_timeout=60, ping_interval=25)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
