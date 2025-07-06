@@ -77,7 +77,8 @@ oma-jeanne-photoboek/
 ├── web_interface.py             # Flask web application
 ├── start_enhanced_web.sh        # Original startup script (host system)
 ├── start_container.sh           # Container-optimized startup script
-├── requirements.txt             # Python dependencies
+├── requirements.txt             # Python dependencies (includes gunicorn)
+├── gunicorn.conf.py             # Gunicorn production server configuration
 ├── Dockerfile                   # Container definition
 ├── docker-compose.yml          # Development deployment
 ├── docker-compose.prod.yml     # Production deployment
@@ -211,6 +212,22 @@ This container-optimized script:
 
 The Docker setup automatically uses the container-optimized script while maintaining compatibility with the original startup process.
 
+### Production vs Development Servers
+
+The application automatically chooses the appropriate server based on the environment:
+
+**Development Mode** (`FLASK_ENV != production`):
+- Uses Flask's built-in Werkzeug server
+- Allows unsafe Werkzeug for development convenience
+- Suitable for local testing and development
+
+**Production Mode** (`FLASK_ENV=production`):
+- Uses Gunicorn WSGI server with eventlet workers
+- Supports WebSocket connections via Flask-SocketIO
+- Optimized for production workloads
+- Automatic worker management and restart
+- Better performance and security
+
 ## 🔧 Configuration Options
 
 ### Environment Variables
@@ -276,6 +293,24 @@ openssl x509 -in ssl/cert.pem -text -noout
 2. Check port forwarding in router
 3. Verify firewall rules
 4. Test local access first
+
+#### Werkzeug Production Error
+If you see "RuntimeError: The Werkzeug web server is not designed to run in production":
+
+```bash
+# Check if FLASK_ENV is set to production
+./deploy.sh logs prod
+
+# If the error persists, rebuild the container
+./deploy.sh clean
+./deploy.sh deploy-prod
+
+# Verify gunicorn is installed
+docker-compose -f docker-compose.prod.yml exec cewe-fetcher pip list | grep gunicorn
+```
+
+**Cause**: The application tries to use Flask's development server in production mode.
+**Solution**: The container now automatically uses Gunicorn in production mode (FLASK_ENV=production).
 
 ## 🔐 Security Considerations
 

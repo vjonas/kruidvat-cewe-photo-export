@@ -60,8 +60,8 @@ deploy_app() {
     print_header "Building and starting the application in $mode mode..."
     
     # Stop any existing containers
-    docker-compose down 2>/dev/null || true
-    docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+    docker compose down 2>/dev/null || true
+    docker compose -f docker-compose.prod.yml down 2>/dev/null || true
     
     # Choose compose file based on mode
     if [ "$mode" = "prod" ]; then
@@ -70,10 +70,10 @@ deploy_app() {
             exit 1
         fi
         print_status "Using production configuration with SSL"
-        docker-compose -f docker-compose.prod.yml up --build -d
+        docker compose -f docker-compose.prod.yml up --build -d
     else
         print_status "Using development configuration"
-        docker-compose up --build -d
+        docker compose up --build -d
     fi
     
     print_status "Application deployed successfully"
@@ -87,10 +87,10 @@ check_status() {
     # Wait a bit for the container to start
     sleep 10
     
-    # Choose compose file based on mode
-    local compose_cmd="docker-compose"
+    # Choose compose file based on mode (use Docker Compose V2 syntax)
+    local compose_cmd="docker compose"
     if [ "$mode" = "prod" ]; then
-        compose_cmd="docker-compose -f docker-compose.prod.yml"
+        compose_cmd="docker compose -f docker-compose.prod.yml"
     fi
     
     if $compose_cmd ps | grep -q "Up"; then
@@ -143,33 +143,33 @@ main() {
         "start")
             print_header "Starting application..."
             if [ "$mode" = "prod" ]; then
-                docker-compose -f docker-compose.prod.yml up -d
+                docker compose -f docker-compose.prod.yml up -d
             else
-                docker-compose up -d
+                docker compose up -d
             fi
             check_status "$mode"
             ;;
         "stop")
             print_header "Stopping application..."
-            docker-compose down 2>/dev/null || true
-            docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+            docker compose down 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml down 2>/dev/null || true
             print_status "Application stopped"
             ;;
         "restart")
             print_header "Restarting application..."
             if [ "$mode" = "prod" ]; then
-                docker-compose -f docker-compose.prod.yml restart
+                docker compose -f docker-compose.prod.yml restart
             else
-                docker-compose restart
+                docker compose restart
             fi
             check_status "$mode"
             ;;
         "logs")
             print_header "Application logs:"
             if [ "$mode" = "prod" ]; then
-                docker-compose -f docker-compose.prod.yml logs -f cewe-fetcher
+                docker compose -f docker-compose.prod.yml logs -f cewe-fetcher
             else
-                docker-compose logs -f cewe-fetcher
+                docker compose logs -f cewe-fetcher
             fi
             ;;
         "status")
@@ -177,8 +177,8 @@ main() {
             ;;
         "clean")
             print_header "Cleaning up..."
-            docker-compose down -v 2>/dev/null || true
-            docker-compose -f docker-compose.prod.yml down -v 2>/dev/null || true
+            docker compose down -v 2>/dev/null || true
+            docker compose -f docker-compose.prod.yml down -v 2>/dev/null || true
             docker system prune -f
             print_status "Cleanup completed"
             ;;

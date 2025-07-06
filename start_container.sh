@@ -15,7 +15,7 @@ echo "🔍 Checking dependencies..."
 python3 -c "
 import sys
 try:
-    import requests, PIL, tqdm, fitz, flask, flask_socketio, bs4
+    import requests, PIL, tqdm, fitz, flask, flask_socketio, bs4, gunicorn, gevent
     print('✅ All required dependencies are available')
 except ImportError as e:
     print(f'❌ Missing dependency: {e}')
@@ -27,9 +27,20 @@ except ImportError as e:
 mkdir -p output images temp_spreads
 
 echo "✅ Setup complete!"
-echo "🌐 Starting web interface..."
-echo "📱 Access the interface at: http://localhost:4200"
-echo "🔧 Press Ctrl+C to stop the server"
 
-# Start the web interface
-exec python3 web_interface.py 
+# Determine if we're in production mode
+if [ "${FLASK_ENV:-}" = "production" ]; then
+    echo "🏭 Starting in production mode with Gunicorn..."
+    echo "🌐 Web interface will be available on port 4200"
+    echo "🔧 Press Ctrl+C to stop the server"
+    
+    # Start with Gunicorn for production
+    exec gunicorn --config gunicorn.conf.py web_interface:application
+else
+    echo "🛠️  Starting in development mode..."
+    echo "📱 Access the interface at: http://localhost:4200"
+    echo "🔧 Press Ctrl+C to stop the server"
+    
+    # Start with Flask dev server for development
+    exec python3 web_interface.py
+fi 

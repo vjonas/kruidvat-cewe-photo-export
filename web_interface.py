@@ -36,7 +36,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-this'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', logger=True, engineio_logger=True)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -547,14 +547,13 @@ def handle_disconnect():
     """Handle client disconnection"""
     print('Client disconnected')
 
-if __name__ == '__main__':
+def create_app():
+    """Application factory for WSGI deployment"""
     # Make sure output directory exists
     os.makedirs('output', exist_ok=True)
     
-    # Start the web server
+    # Log startup information
     print("🚀 Starting Enhanced CEWE Photo Book Fetcher Web Interface...")
-    print("📱 Access the web interface at: http://localhost:4200")
-    print("🔧 Make sure to run this in the same directory as your scripts")
     
     if CEWE_FETCHER_AVAILABLE:
         print("✅ CEWE URL fetcher available")
@@ -566,4 +565,18 @@ if __name__ == '__main__':
     else:
         print("⚠️ Spreads creator not available")
     
-    socketio.run(app, host='0.0.0.0', port=4200, debug=False)
+    return app
+
+if __name__ == '__main__':
+    # Direct run (development mode)
+    create_app()
+    
+    print("📱 Access the web interface at: http://localhost:4200")
+    print("🔧 Make sure to run this in the same directory as your scripts")
+    print("⚠️  Running in development mode - use gunicorn for production")
+    
+    # Allow unsafe Werkzeug for development
+    socketio.run(app, host='0.0.0.0', port=4200, debug=False, allow_unsafe_werkzeug=True)
+
+# For gunicorn deployment
+application = create_app()
